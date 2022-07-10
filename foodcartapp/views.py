@@ -107,9 +107,9 @@ def validate(order):
 
     for ordered_product in order['products']:
         if not Product.objects.filter(id=ordered_product['product']):
-            errors.append({
-                'products': f'Недопустимый продукт {ordered_product["product"]}'
-            })
+            errors.append(
+                {'products':
+                    f'Недопустимый продукт {ordered_product["product"]}'})
 
     if not carrier._is_mobile(
         number_type(phonenumbers.parse(order['phonenumber']))
