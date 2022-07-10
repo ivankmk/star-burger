@@ -5,6 +5,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 import phonenumbers
+from phonenumbers import carrier
+from phonenumbers.phonenumberutil import number_type
 
 
 from .models import Product, Order, OrderItem
@@ -65,12 +67,32 @@ def product_list_api(request):
 @api_view(['POST'])
 def register_order(request):
     order = request.data
+    required_keys = ['firstname', 'lastname', 'phonenumber', 'address']
+
+    empty_keys = []
+    absent_keys = []
     
-    try:
-        order['products']
-    except KeyError:
+    for key in required_keys:
+        if key not in order.keys():
+            absent_keys.append(key)
+    if absent_keys:
         content = {
-            'products': 'Обязательное поле.'
+            ', '.join(absent_keys): 'Обязательное поле.'
+        }
+        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+    for key in order.keys():
+        if order[key] is None or order[key] == "":
+            empty_keys.append(key)
+    if empty_keys:
+        content = {
+            ', '.join(empty_keys): 'Это поле не может быть пустым.'
+        }
+        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+    if isinstance(order['firstname'], list):
+        content = {
+            'firstname': ' Not a valid string.'
         }
         return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
 
@@ -80,19 +102,27 @@ def register_order(request):
         }
         return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
 
-    elif not order['products']:
-        content = {
-            'products': 'Это поле не может быть пустым.'
-        }
-        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
-
-    elif isinstance(order['products'], str):
+    if isinstance(order['products'], str):
         content = {
             'products': 'Ожидался list со значениями, но был получен "str".'
         }
         return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
-    
-    
+
+    for ordered_product in order['products']:
+        if not Product.objects.filter(id=ordered_product['product']):
+            content = {
+                'products': f'Недопустимый продукт {ordered_product["product"]}'
+            }
+            return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+    if not carrier._is_mobile(
+        number_type(phonenumbers.parse(order['phonenumber']))
+    ):
+        content = {
+            'phonenumber': 'Введен некорректный номер телефона.'
+        }
+        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
+
     customer = Order.objects.create(
         firstname=order['firstname'],
         lastname=order['lastname'],
