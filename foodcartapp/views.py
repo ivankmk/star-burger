@@ -3,7 +3,7 @@ from django.templatetags.static import static
 import json
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-
+from rest_framework import status
 import phonenumbers
 
 
@@ -65,6 +65,34 @@ def product_list_api(request):
 @api_view(['POST'])
 def register_order(request):
     order = request.data
+    
+    try:
+        order['products']
+    except KeyError:
+        content = {
+            'products': 'Обязательное поле.'
+        }
+        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+    if isinstance(order['products'], list) and len(order['products']) == 0:
+        content = {
+            'products': 'Этот список не может быть пустым.'
+        }
+        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+    elif not order['products']:
+        content = {
+            'products': 'Это поле не может быть пустым.'
+        }
+        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+    elif isinstance(order['products'], str):
+        content = {
+            'products': 'Ожидался list со значениями, но был получен "str".'
+        }
+        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
+    
+    
     customer = Order.objects.create(
         firstname=order['firstname'],
         lastname=order['lastname'],
