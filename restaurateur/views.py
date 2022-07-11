@@ -3,12 +3,9 @@ from django.shortcuts import redirect, render
 from django.views import View
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import user_passes_test
-
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
-
-
-from foodcartapp.models import Product, Restaurant
+from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem
 
 
 class Login(forms.Form):
@@ -76,7 +73,8 @@ def view_products(request):
             **default_availability,
             **{item.restaurant_id: item.availability for item in product.menu_items.all()},
         }
-        orderer_availability = [availability[restaurant.id] for restaurant in restaurants]
+        orderer_availability = [availability[restaurant.id]
+                                for restaurant in restaurants]
 
         products_with_restaurants.append(
             (product, orderer_availability)
@@ -97,6 +95,18 @@ def view_restaurants(request):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
+    orders = Order.objects.filter(status='НЕ ОБРАБОТАН').order_by(
+        'registered_at').calculate_order_price().all()
+    menu = RestaurantMenuItem.objects.filter(availability=True).select_related(
+        'restaurant').select_related('product')
+    menu_items = {}
+    for menu_item in menu:
+        menu_items.setdefault(menu_item.product.id, list()
+                              ).append(menu_item.restaurant)
+
+    for order in orders:
+        order.order_restaurants = order.fetch_restaurants_distance(menu_items)
+
     return render(request, template_name='order_items.html', context={
-        # TODO заглушка для нереализованного функционала
+        'order_items': orders
     })
