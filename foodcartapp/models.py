@@ -153,7 +153,8 @@ class Order(models.Model):
     )
     lastname = models.CharField(
         max_length=255,
-        verbose_name='Фамилия')
+        verbose_name='Фамилия'
+    )
     address = models.CharField(
         max_length=255,
         verbose_name='Адрес'
@@ -161,7 +162,7 @@ class Order(models.Model):
     phonenumber = PhoneNumberField(
         verbose_name='Телефон',
         db_index=True
-    )
+        )
 
     status = models.CharField(
         max_length=255,
