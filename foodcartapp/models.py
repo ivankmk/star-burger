@@ -217,7 +217,10 @@ class Order(models.Model):
         order_items_restaurants = [
             menu_items[order_item['product']] for order_item in order_items]
         order_restaurants = set.intersection(
-            *[set(order_item_restaurants) for order_item_restaurants in order_items_restaurants])
+            *[set(
+                order_item_restaurants
+                ) for order_item_restaurants in order_items_restaurants]
+            )
         return order_restaurants
 
     def fetch_restaurants_distance(self, menu_items):
@@ -258,7 +261,7 @@ class OrderItem(models.Model):
     product = models.ForeignKey(
         Product,
         on_delete=models.CASCADE,
-        related_name='ordered_products',
+        related_name='product_order',
         verbose_name='Товар'
     )
 

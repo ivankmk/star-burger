@@ -96,12 +96,15 @@ def register_order(request):
 
     )
 
-    for product in order_serializer.validated_data['products']:
-        OrderItem.objects.create(
+    ordered_products = [
+        OrderItem(
             order=order,
             product=product['product'],
             quantity=product['quantity'],
             price=product['product'].price
-        )
+        ) for product in order_serializer.validated_data['products']
+    ]
+
+    OrderItem.objects.bulk_create(ordered_products)
 
     return Response(order_serializer.data)
